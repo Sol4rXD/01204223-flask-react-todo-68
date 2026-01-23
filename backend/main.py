@@ -1,52 +1,20 @@
-from flask import Flask, jsonify, request
+################# 
+### ไฟล์ main.py
+#################
+
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import ForeignKey, Integer, String  # เพิ่ม import Foreignkey
-from sqlalchemy.orm import (DeclarativeBase,  # เพิ่ม import relatiohship
-                            Mapped, mapped_column, relationship)
+
+from models import TodoItem, Comment, db                             # import จาก models
 
 app = Flask(__name__)
 CORS(app)
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todos.db'
 
-class Base(DeclarativeBase):
-  pass
-
-db = SQLAlchemy(app, model_class=Base)
+db.init_app(app)                                                     # แก้จาก db = SQLAlchemy(app, model_class=Base)
 migrate = Migrate(app, db)
-
-
-class TodoItem(db.Model):
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    title: Mapped[str] = mapped_column(String(100))
-    done: Mapped[bool] = mapped_column(default=False)
-
-    ##### เพิ่มส่วน relationship  ซึ่งตรงนี้จะไม่กระทบ schema database เลย (เพราะว่าไม่มีการ map ไปยังคอลัมน์ใดๆ)
-    comments: Mapped[list["Comment"]] = relationship(back_populates="todo")
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "title": self.title,
-            "done": self.done,
-            "comments": [
-                comment.to_dict() for comment in self.comments
-            ]
-        }
-
-class Comment(db.Model):
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    message: Mapped[str] = mapped_column(String(250))
-    todo_id: Mapped[int] = mapped_column(ForeignKey('todo_item.id'))
-
-    todo: Mapped["TodoItem"] = relationship(back_populates="comments")
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "message": self.message,
-            "todo_id": self.todo_id
-        }
 
 # with app.app_context():
 #     db.create_all()
@@ -102,6 +70,7 @@ def toggle_todo(id):
 
 @app.route('/api/todos/<int:id>/', methods=['DELETE'])
 def delete_todo(id):
+    print(1)
     todo = TodoItem.query.get_or_404(id)
     db.session.delete(todo)
     db.session.commit()
