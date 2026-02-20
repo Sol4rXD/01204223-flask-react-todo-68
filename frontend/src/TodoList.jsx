@@ -1,19 +1,49 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "./context/AuthContext.jsx";
 import "./App.css";
-import TodoItem from './TodoItem.jsx'
-import LoginForm from './LoginForm.jsx';
-import TodoList from './TodoList.jsx';
-import { AuthProvider } from './context/AuthContext.jsx';
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-function App() {
-  const TODOLIST_API_URL = "http://127.0.0.1:5000/api/todos/";
-  const TODOLIST_LOGIN_URL = 'http://localhost:5000/api/login/';
+import TodoItem from "./TodoItem.jsx";
+
+function TodoList({ apiUrl }) {
+  const TODOLIST_API_URL = apiUrl;
+
+  const [todoList, setTodoList] = useState([]);
+  const [newTitle, setNewTitle] = useState("");
+  const { username, accessToken, logout } = useAuth();
+
+  useEffect(() => {
+    fetchTodoList();
+  }, [username]); 
+
+
+  async function fetchTodoList() {
+    try {
+      const response = await fetch(TODOLIST_API_URL, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Network error");
+      }
+      const data = await response.json();
+      setTodoList(data);
+    } catch (err) {
+      // alert(
+      //   "Failed to fetch todo list from backend. Make sure the backend is running.",
+      // );
+      setTodoList([]);
+    }
+  }
+
   async function toggleDone(id) {
     const toggle_api_url = `${TODOLIST_API_URL}${id}/toggle/`;
     try {
       const response = await fetch(toggle_api_url, {
         method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
       if (response.ok) {
         const updatedTodo = await response.json();
@@ -32,6 +62,7 @@ function App() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ title: newTitle }),
       });
@@ -50,6 +81,9 @@ function App() {
     try {
       const response = await fetch(delete_api_url, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
       if (response.ok) {
         setTodoList(todoList.filter((todo) => todo.id !== id));
@@ -58,6 +92,7 @@ function App() {
       console.error("Error deleting todo:", error);
     }
   }
+
   async function addNewComment(todoId, newComment) {
     try {
       const url = `${TODOLIST_API_URL}${todoId}/comments/`;
@@ -65,6 +100,7 @@ function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ 'message': newComment }),
       });
@@ -75,36 +111,43 @@ function App() {
       console.error("Error adding new comment:", error);
     }
   }
-  return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route 
-            path="/" 
-            element={
-              <TodoList apiUrl={TODOLIST_API_URL}/>
-            } 
-          />
-          <Route 
-            path="/about" 
-            element={
-              <>
-                <h1>About</h1>
-                <p>This is a simple todo list application built with React and Flask.</p>
-                <a href="/">Back to Home</a>
-              </>
-            } 
-          />
-          <Route
-            path="/login"
-            element={
-              <LoginForm loginUrl={TODOLIST_LOGIN_URL} />
-            }
-          />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
-  )
-}
 
-export default App;
+  return (
+    <>
+      <h1>Todo List</h1>
+      <ul>
+        {todoList.map((todo) => (
+          <TodoItem
+            key={todo.id}
+            todo={todo}
+            toggleDone={toggleDone}
+            deleteTodo={deleteTodo}
+            addNewComment={addNewComment}
+          />
+        ))}
+      </ul>
+      New:{" "}
+      <input
+        type="text"
+        value={newTitle}
+        onChange={(e) => {
+          setNewTitle(e.target.value);
+        }}
+      />
+      <button
+        onClick={() => {
+          addNewTodo();
+        }}
+      >
+        Add
+      </button>
+      <br />
+      <a href="/about">About</a>
+      <br/>
+      {username && (
+        <a href="#" onClick={(e) => {e.preventDefault(); logout();}}>Logout</a> 
+      )}
+    </>
+  );
+}
+export default TodoList;
