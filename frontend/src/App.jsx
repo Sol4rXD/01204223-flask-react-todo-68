@@ -5,10 +5,11 @@ import LoginForm from './LoginForm.jsx';
 import TodoList from './TodoList.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import PrivateRoute from "./PrivateRoute.jsx";
 
 function App() {
   const TODOLIST_API_URL = "http://127.0.0.1:5000/api/todos/";
-  const TODOLIST_LOGIN_URL = 'http://localhost:5000/api/login/';
+  const TODOLIST_LOGIN_URL = 'http://127.0.0.1:5000/api/login/';
   async function toggleDone(id) {
     const toggle_api_url = `${TODOLIST_API_URL}${id}/toggle/`;
     try {
@@ -82,7 +83,9 @@ function App() {
           <Route 
             path="/" 
             element={
-              <TodoList apiUrl={TODOLIST_API_URL}/>
+              <PrivateRoute>
+                <TodoList apiUrl={TODOLIST_API_URL}/>
+              </PrivateRoute>
             } 
           />
           <Route 
