@@ -1,16 +1,29 @@
-################# 
+################ 
 ### ไฟล์ models.py
 #################
 
+from flask_bcrypt import check_password_hash, generate_password_hash
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import Integer, String, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
 
 class Base(DeclarativeBase):
     pass
 
 db = SQLAlchemy(model_class=Base)                   # แก้จาก db = SQLAlchemy(app, model_class=Base)
+
+class User(db.Model):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(100), unique=True)
+    full_name: Mapped[str] = mapped_column(String(200))
+    hashed_password: Mapped[str] = mapped_column(String(100))
+
+    def set_password(self, password):
+        self.hashed_password = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.hashed_password, password)
 
 class TodoItem(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
