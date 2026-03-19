@@ -1,5 +1,7 @@
 /venv
 __pycache__
 /instance
+/frontend-static
+/local_config.py
 
 .env
